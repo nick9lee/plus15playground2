@@ -28,15 +28,50 @@ class ViewController: UIViewController, MKMapViewDelegate {
         }
         
         let url = URL(fileURLWithPath: path)
+        var result: [Section]
         
         do {
             let jsonData = try Data(contentsOf: url)
-            let result: [Section] = try! JSONDecoder().decode([Section].self, from: jsonData)
+            result = try! JSONDecoder().decode([Section].self, from: jsonData)
+            
+            print(result.count)
+            
+            var polygons: [MKPolygon] = []
+            
+            for section in result {
+                var exteriorPolygonPoints: [CLLocationCoordinate2D] = []
+                var interiorPolygons: [MKPolygon] = []
+                
+                //the_geom.coordinates[0][0][0][1]
+                //                           ^ coordinate pair
+                
+                //filling in exteriorPolygonPoints
+                for i in 0..<section.the_geom.coordinates[0][0].count {
+                    let point = CLLocationCoordinate2D(latitude: section.the_geom.coordinates[0][0][i][1], longitude: section.the_geom.coordinates[0][0][i][0])
+                    exteriorPolygonPoints.append(point)
+                }
+                
+                //filling in interiorPolygonPoints
+                //creating interiorPolygon
+                //adding newly created polygon to interiorPolygons
+                for i in 1..<section.the_geom.coordinates[0].count {
+                    var interiorPolygonPoints: [CLLocationCoordinate2D] = []
+                    for j in 0..<section.the_geom.coordinates[0][i].count {
+                        let point = CLLocationCoordinate2D(latitude: section.the_geom.coordinates[0][i][j][1], longitude: section.the_geom.coordinates[0][i][j][0])
+                        interiorPolygonPoints.append(point)
+                    }
+                    interiorPolygons.append(MKPolygon(coordinates: interiorPolygonPoints, count: interiorPolygonPoints.count))
+                }
+                
+                let polygon = MKPolygon(coordinates: exteriorPolygonPoints, count: exteriorPolygonPoints.count, interiorPolygons: interiorPolygons)
+                polygons.append(polygon)
+            }
+            
+            return polygons
+            
         } catch {
-            fatalError("unable to decode json")
+            print("data is fucked")
         }
-        
-        
         return []
     }
     
@@ -67,14 +102,5 @@ struct Geom: Decodable {
     let revis_date: String!
     let access_hours: String!
     let modified_dt: String!
-}
-
-struct Result: Decodable {
-    let data: [ResultItem]
-}
-
-struct ResultItem: Decodable {
-    let title: String
-    let items: [String]
 }
 
