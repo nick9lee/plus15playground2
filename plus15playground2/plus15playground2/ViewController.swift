@@ -15,14 +15,78 @@ class ViewController: UIViewController, MKMapViewDelegate {
     override func viewDidLoad() {
         mapView.delegate = self
         
-        mapView.addOverlays(self.parseGeoJSON())
+        parseGeoJSON()
         
-        mapView.region = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 51.044916, longitude: -114.070336), span: MKCoordinateSpan(latitudeDelta: 0.06, longitudeDelta: 0.06))
+        mapView.region = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 51.045000, longitude: -114.069000), span: MKCoordinateSpan(latitudeDelta: 0.03, longitudeDelta: 0.03))
         
         super.viewDidLoad()
     }
     
-    func parseGeoJSON() -> [MKOverlay] {
+    func parseGeoJSON(){
+        let url = "https://data.calgary.ca/resource/3u3x-hrc7.json"
+        
+        var polygons: [MKOverlay] = []
+        
+        let task = URLSession.shared.dataTask(with: URL(string: url)!, completionHandler: { jsonData, response, error in
+            guard let jsonData = jsonData, error == nil else {
+                print("using json file")
+                self.parseGeoJSONWithFile()
+                return
+            }
+            
+            var json: [Section]?
+            do {
+                json = try JSONDecoder().decode([Section].self, from: jsonData)
+            } catch {
+                print("failed to convert data from api")
+                self.parseGeoJSONWithFile()
+                return
+            }
+            
+            guard let result = json else {
+                print ("lol idk")
+                self.parseGeoJSONWithFile()
+                return
+            }
+            
+            for section in result {
+                var exteriorPolygonPoints: [CLLocationCoordinate2D] = []
+                var interiorPolygons: [MKPolygon] = []
+                
+                //the_geom.coordinates[0][0][0][1]
+                //                           ^ coordinate pair
+                
+                //filling in exteriorPolygonPoints
+                for i in 0..<section.the_geom.coordinates[0][0].count {
+                    let point = CLLocationCoordinate2D(latitude: section.the_geom.coordinates[0][0][i][1], longitude: section.the_geom.coordinates[0][0][i][0])
+                    exteriorPolygonPoints.append(point)
+                }
+                
+                //filling in interiorPolygonPoints
+                //creating interiorPolygon
+                //adding newly created polygon to interiorPolygons
+                for i in 1..<section.the_geom.coordinates[0].count {
+                    var interiorPolygonPoints: [CLLocationCoordinate2D] = []
+                    for j in 0..<section.the_geom.coordinates[0][i].count {
+                        let point = CLLocationCoordinate2D(latitude: section.the_geom.coordinates[0][i][j][1], longitude: section.the_geom.coordinates[0][i][j][0])
+                        interiorPolygonPoints.append(point)
+                    }
+                    interiorPolygons.append(MKPolygon(coordinates: interiorPolygonPoints, count: interiorPolygonPoints.count))
+                }
+                
+                let polygon = MKPolygon(coordinates: exteriorPolygonPoints, count: exteriorPolygonPoints.count, interiorPolygons: interiorPolygons)
+                polygons.append(polygon)
+            }
+            
+            self.updateMapViewOverlays(polygons: polygons)
+            print("used api data")
+        })
+        
+        task.resume()
+    }
+    
+    func parseGeoJSONWithFile() {
+        print("used file data")
         guard let path = Bundle.main.path(forResource: "Plus15", ofType: "json") else {
             fatalError("Unable to get geojson")
         }
@@ -33,8 +97,6 @@ class ViewController: UIViewController, MKMapViewDelegate {
         do {
             let jsonData = try Data(contentsOf: url)
             result = try! JSONDecoder().decode([Section].self, from: jsonData)
-            
-            print(result.count)
             
             var polygons: [MKPolygon] = []
             
@@ -67,12 +129,18 @@ class ViewController: UIViewController, MKMapViewDelegate {
                 polygons.append(polygon)
             }
             
-            return polygons
+            //return polygons
+            updateMapViewOverlays(polygons: polygons)
             
         } catch {
-            print("data is fucked")
+            print("data is messed")
         }
-        return []
+    }
+    
+    func updateMapViewOverlays(polygons: [MKOverlay]) {
+        DispatchQueue.main.async {
+            self.mapView.addOverlays(polygons)
+        }
     }
     
     func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
@@ -86,17 +154,15 @@ class ViewController: UIViewController, MKMapViewDelegate {
             
             return MKOverlayRenderer()
     }
-
-
 }
 
-struct Section: Decodable {
+struct Section: Codable {
     let structure_type: String!
     let type: String!
     let the_geom: Geom
 }
 
-struct Geom: Decodable {
+struct Geom: Codable {
     let type: String
     let coordinates: [[[[Double]]]]
     let revis_date: String!
