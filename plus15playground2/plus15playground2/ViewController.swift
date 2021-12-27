@@ -8,7 +8,7 @@
 import UIKit
 import MapKit
 
-class ViewController: UIViewController, MKMapViewDelegate {
+class ViewController: UIViewController{
 
     @IBOutlet weak var mapView: MKMapView!
     
@@ -16,6 +16,8 @@ class ViewController: UIViewController, MKMapViewDelegate {
         mapView.delegate = self
         
         parseGeoJSON()
+        
+        //parseGeoJSONWithFile()
         
         mapView.region = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 51.045000, longitude: -114.069000), span: MKCoordinateSpan(latitudeDelta: 0.03, longitudeDelta: 0.03))
         
@@ -37,6 +39,7 @@ class ViewController: UIViewController, MKMapViewDelegate {
             var json: [Section]?
             do {
                 json = try JSONDecoder().decode([Section].self, from: jsonData)
+                print(json![2])
             } catch {
                 print("failed to convert data from api")
                 self.parseGeoJSONWithFile()
@@ -75,6 +78,8 @@ class ViewController: UIViewController, MKMapViewDelegate {
                 }
                 
                 let polygon = MKPolygon(coordinates: exteriorPolygonPoints, count: exteriorPolygonPoints.count, interiorPolygons: interiorPolygons)
+                polygon.title = section.the_geom.access_hours == nil ? "access hours not available" : section.the_geom.access_hours
+                
                 polygons.append(polygon)
             }
             
@@ -126,6 +131,7 @@ class ViewController: UIViewController, MKMapViewDelegate {
                 }
                 
                 let polygon = MKPolygon(coordinates: exteriorPolygonPoints, count: exteriorPolygonPoints.count, interiorPolygons: interiorPolygons)
+                polygon.title = section.the_geom.access_hours == nil ? "access hours not available" : section.the_geom.access_hours
                 polygons.append(polygon)
             }
             
@@ -142,13 +148,25 @@ class ViewController: UIViewController, MKMapViewDelegate {
             self.mapView.addOverlays(polygons)
         }
     }
+}
+
+extension ViewController : MKMapViewDelegate {
     
     func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
             if overlay is MKPolygon {
                 let polygonRenderer = MKPolygonRenderer(polygon: overlay as! MKPolygon)
-                polygonRenderer.lineWidth = 1.0
-                polygonRenderer.strokeColor = UIColor.purple
-                polygonRenderer.fillColor = UIColor.red
+                if overlay.title == "access hours not available" {
+                    polygonRenderer.lineWidth = 1.0
+                    polygonRenderer.strokeColor = UIColor.purple
+                    polygonRenderer.fillColor = UIColor.red
+                    polygonRenderer.alpha = 0.4
+                } else {
+                    polygonRenderer.lineWidth = 1.0
+                    polygonRenderer.strokeColor = UIColor.purple
+                    polygonRenderer.fillColor = UIColor.gray
+                    polygonRenderer.alpha = 0.4
+                }
+                
                 return polygonRenderer
             }
             
