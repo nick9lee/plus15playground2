@@ -167,6 +167,14 @@ extension ViewController : MKMapViewDelegate {
                     polygonRenderer.alpha = 0.4
                 }
                 
+                
+                //access hour types:
+                //"access hours not available"
+                //"Monday - Friday, 7am - 9pm"
+                //"Daily, 7am - 12 midnight"
+                
+                
+                
                 return polygonRenderer
             }
             
