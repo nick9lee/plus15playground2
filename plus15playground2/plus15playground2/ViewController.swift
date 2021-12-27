@@ -39,7 +39,6 @@ class ViewController: UIViewController{
             var json: [Section]?
             do {
                 json = try JSONDecoder().decode([Section].self, from: jsonData)
-                print(json![2])
             } catch {
                 print("failed to convert data from api")
                 self.parseGeoJSONWithFile()
@@ -155,17 +154,24 @@ extension ViewController : MKMapViewDelegate {
     func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
             if overlay is MKPolygon {
                 let polygonRenderer = MKPolygonRenderer(polygon: overlay as! MKPolygon)
-                if overlay.title == "access hours not available" {
-                    polygonRenderer.lineWidth = 1.0
+                
+                polygonRenderer.lineWidth = 0.5
+                polygonRenderer.alpha = 0.4
+                
+                if overlay.title == "Monday - Friday, 7am - 9pm" {
                     polygonRenderer.strokeColor = UIColor.purple
-                    polygonRenderer.fillColor = UIColor.red
-                    polygonRenderer.alpha = 0.4
-                } else {
-                    polygonRenderer.lineWidth = 1.0
-                    polygonRenderer.strokeColor = UIColor.purple
+                    polygonRenderer.fillColor = UIColor.purple
+                } else if overlay.title == "Daily, 7am - 12 midnight" {
+                    polygonRenderer.strokeColor = UIColor.darkGray
                     polygonRenderer.fillColor = UIColor.gray
-                    polygonRenderer.alpha = 0.4
+                } else if overlay.title == "access hours not available" {
+                    polygonRenderer.strokeColor = UIColor.blue
+                    polygonRenderer.fillColor = UIColor.blue
+                } else {
+                    polygonRenderer.strokeColor = UIColor.green
+                    polygonRenderer.fillColor = UIColor.green
                 }
+            
                 
                 
                 //access hour types:
