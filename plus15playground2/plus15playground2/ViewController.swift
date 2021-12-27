@@ -78,7 +78,7 @@ class ViewController: UIViewController{
                 }
                 
                 let polygon = MKPolygon(coordinates: exteriorPolygonPoints, count: exteriorPolygonPoints.count, interiorPolygons: interiorPolygons)
-                polygon.title = section.the_geom.access_hours == nil ? "access hours not available" : section.the_geom.access_hours
+                polygon.title = section.access_hours == nil ? "access hours not available" : section.access_hours
                 
                 polygons.append(polygon)
             }
@@ -131,7 +131,7 @@ class ViewController: UIViewController{
                 }
                 
                 let polygon = MKPolygon(coordinates: exteriorPolygonPoints, count: exteriorPolygonPoints.count, interiorPolygons: interiorPolygons)
-                polygon.title = section.the_geom.access_hours == nil ? "access hours not available" : section.the_geom.access_hours
+                polygon.title = section.access_hours == nil ? "access hours not available" : section.access_hours
                 polygons.append(polygon)
             }
             
@@ -178,13 +178,13 @@ struct Section: Codable {
     let structure_type: String!
     let type: String!
     let the_geom: Geom
+    let revis_date: String!
+    let access_hours: String!
+    let modified_dt: String!
 }
 
 struct Geom: Codable {
     let type: String
     let coordinates: [[[[Double]]]]
-    let revis_date: String!
-    let access_hours: String!
-    let modified_dt: String!
 }
 
